@@ -1,0 +1,233 @@
+--- a/source/dub/dub.d
++++ b/source/dub/dub.d
+@@ -179,7 +179,7 @@
+ 			m_config.skipRegistry.set ? m_config.skipRegistry.value : SkipPackageSuppliers.none);
+ 
+ 		const registry_var = environment.get("DUB_REGISTRY", null);
+-		m_packageSuppliers = this.makePackageSuppliers(base, skipValue, registry_var);
++		m_packageSuppliers = environment.get("DUB_PURIFIER_PACKAGES", "").length ? null : this.makePackageSuppliers(base, skipValue, registry_var);
+ 		m_packageManager = this.makePackageManager();
+ 
+ 		auto ccps = m_config.customCachePaths;
+@@ -292,7 +292,7 @@
+ 		// $DUB_HOME environment variable is set.
+ 		bool overrideDubHomeFromEnv;
+ 		{
+-			string dubHome = environment.get("DUB_HOME");
++			string dubHome = environment.get("DUB_PURIFIER_HOME", environment.get("DUB_HOME"));
+ 			if (!dubHome.length) {
+ 				auto dpath = environment.get("DPATH");
+ 				if (dpath.length)
+--- a/source/dub/generators/build.d
++++ b/source/dub/generators/build.d
+@@ -72,6 +72,8 @@
+ 	override void generateTargets(GeneratorSettings settings, in TargetInfo[string] targets)
+ 	{
+ 		import std.path : setExtension;
++		if (environment.get("DUB_PURIFIER_ROOT_NAME", "").length)
++			enforce(!settings.rdmd && !settings.combined && settings.buildMode == BuildMode.separate, "dub-purifier requires separately prepared dependency targets");
+ 		scope (exit) cleanupTemporaries();
+ 
+ 		void checkPkgRequirements(const(Package) pkg)
+@@ -95,7 +97,7 @@
+ 			settings.buildType.color(Color.magenta), settings.platform.compilerBinary,
+ 			settings.platform.architecture);
+ 
+-		if (settings.rdmd || (rootTT == TargetType.staticLibrary && !settings.buildDeep)) {
++		if (environment.get("DUB_PURIFIER_DEPS_ONLY", "") != "1" && (settings.rdmd || (rootTT == TargetType.staticLibrary && !settings.buildDeep))) {
+ 			// Only build the main target.
+ 			// RDMD always builds everything at once and static libraries don't need their
+ 			// dependencies to be built, unless --deep flag is specified
+@@ -125,6 +127,8 @@
+ 			foreach (dep; ti.dependencies)
+ 				buildTargetRec(dep);
+ 
++			if (environment.get("DUB_PURIFIER_DEPS_ONLY", "") == "1" && ti.pack is m_project.rootPackage) return;
++
+ 			NativePath[] additional_dep_files;
+ 			auto bs = ti.buildSettings.dup;
+ 			const tt = bs.targetType;
+@@ -255,24 +259,27 @@
+ 	private bool performCachedBuild(GeneratorSettings settings, BuildSettings buildsettings, in Package pack, string config,
+ 		string build_id, in Package[] packages, in NativePath[] additional_dep_files, out NativePath target_binary_path)
+ 	{
++		const purifierDependency = environment.get("DUB_PURIFIER_ROOT_NAME", "") != "" && pack !is m_project.rootPackage;
++		const frozenDependency = purifierDependency && environment.get("DUB_PURIFIER_DEPS_ONLY", "") != "1";
+ 		NativePath target_path;
+-		if (settings.tempBuild) {
++		if (settings.tempBuild && !purifierDependency) {
+ 			string packageName = pack.basePackage is null ? pack.name : pack.basePackage.name;
+ 			m_tempTargetExecutablePath = target_path = getTempDir() ~ format(".dub/build/%s-%s/%s/", packageName, pack.version_, build_id);
+ 		}
+ 		else
+ 			target_path = targetCacheDir(settings.cache, pack, build_id);
+ 
+-		if (!settings.force && isUpToDate(target_path, buildsettings, settings, pack, packages, additional_dep_files)) {
++		if ((!settings.force || frozenDependency) && isUpToDate(target_path, buildsettings, settings, pack, packages, additional_dep_files)) {
+ 			logInfo("Up-to-date", Color.green, "%s %s: target for configuration [%s] is up to date.",
+ 				pack.name.color(Mode.bold), pack.version_, config.color(Color.blue));
+ 			logDiagnostic("Using existing build in %s.", target_path.toNativeString());
+ 			target_binary_path = target_path ~ settings.compiler.getTargetFileName(buildsettings, settings.platform);
+-			if (!settings.tempBuild)
++			if (!settings.tempBuild && !purifierDependency)
+ 				copyTargetFile(target_path, buildsettings, settings);
+ 			return true;
+ 		}
+ 
++		enforce(!frozenDependency, "Prepared Nix dependency build is missing or stale: " ~ pack.name ~ " at " ~ target_path.toNativeString());
+ 		if (!isWritableDir(target_path, true)) {
+ 			if (!settings.tempBuild)
+ 				logInfo("Build directory %s is not writable. Falling back to direct build in the system's temp folder.", target_path);
+@@ -294,7 +301,7 @@
+ 		target_binary_path = getTargetPath(cbuildsettings, settings);
+ 
+ 		if (!settings.tempBuild) {
+-			copyTargetFile(target_path, buildsettings, settings);
++			if (!purifierDependency) copyTargetFile(target_path, buildsettings, settings);
+ 			updateCacheDatabase(settings, cbuildsettings, pack, config, build_id, target_binary_path.toNativeString());
+ 		}
+ 
+--- a/source/dub/generators/generator.d
++++ b/source/dub/generators/generator.d
+@@ -806,6 +806,9 @@
+ package(dub) NativePath packageCache(NativePath cachePath, in Package pkg)
+ {
+ 	import std.algorithm.searching : findSplit;
++	import std.process : environment;
++	if (environment.get("DUB_PURIFIER_ROOT_NAME", "") != "" && pkg.name != environment.get("DUB_PURIFIER_ROOT_NAME"))
++		cachePath = NativePath(environment.get("DUB_PURIFIER_DEP_CACHE"));
+ 
+ 	assert(pkg !is null);
+ 	assert(!cachePath.empty);
+@@ -1016,6 +1019,10 @@
+ private void prepareGeneration(in Package pack, in Project proj, in GeneratorSettings settings,
+ 	in BuildSettings buildsettings)
+ {
++	import std.process : environment;
++	if (environment.get("DUB_PURIFIER_DEPS_ONLY", "") == "1" && pack is proj.rootPackage) return;
++	if (environment.get("DUB_PURIFIER_ROOT_NAME", "") != "" && pack !is proj.rootPackage)
++		enforce(!buildsettings.preGenerateCommands.length && !buildsettings.postGenerateCommands.length && !buildsettings.copyFiles.length, "Dependency generation hooks/copyFiles are not yet supported by dub-purifier");
+ 	if (buildsettings.preGenerateCommands.length && !isRecursiveInvocation(pack.name)) {
+ 		logInfo("Pre-gen", Color.light_green, "Running commands for %s", pack.name);
+ 		runBuildCommands(CommandType.preGenerate, buildsettings.preGenerateCommands, pack, proj, settings, buildsettings);
+@@ -1028,6 +1035,8 @@
+ private void finalizeGeneration(in Package pack, in Project proj, in GeneratorSettings settings,
+ 	in BuildSettings buildsettings, NativePath target_path, bool generate_binary)
+ {
++	import std.process : environment;
++	if (environment.get("DUB_PURIFIER_ROOT_NAME", "") != "" && (pack !is proj.rootPackage || environment.get("DUB_PURIFIER_DEPS_ONLY", "") == "1")) return;
+ 	if (buildsettings.postGenerateCommands.length && !isRecursiveInvocation(pack.name)) {
+ 		logInfo("Post-gen", Color.light_green, "Running commands for %s", pack.name);
+ 		runBuildCommands(CommandType.postGenerate, buildsettings.postGenerateCommands, pack, proj, settings, buildsettings);
+--- a/source/dub/packagemanager.d
++++ b/source/dub/packagemanager.d
+@@ -164,13 +164,20 @@
+ 	public this(Filesystem fs, NativePath local, NativePath user, NativePath system)
+ 	{
+ 		this.fs = fs;
+-		this.m_repositories = [ Location(local), Location(user), Location(system) ];
++		import std.process : environment;
++        auto purePackages = environment.get("DUB_PURIFIER_PACKAGES", "");
++        if (purePackages.length) {
++            auto location = NativePath(purePackages);
++            this.m_repositories = [Location(location), Location(location), Location(location)];
++        } else this.m_repositories = [ Location(local), Location(user), Location(system) ];
+ 	}
+ 
+ 	/** Gets/sets the list of paths to search for local packages.
+ 	*/
+ 	@property void searchPath(NativePath[] paths)
+ 	{
++		import std.process : environment;
++		if (environment.get("DUB_PURIFIER_PACKAGES", "").length) return;
+ 		if (paths == this.m_internal.searchPath) return;
+ 		this.m_internal.searchPath = paths.dup;
+ 		this.refresh();
+@@ -205,6 +212,8 @@
+ 		import std.algorithm.iteration : map;
+ 		import std.array : array;
+ 
++		import std.process : environment;
++		if (environment.get("DUB_PURIFIER_PACKAGES", "").length) return;
+ 		m_repositories.length = PlacementLocation.max+1;
+ 		m_repositories ~= custom_cache_paths.map!(p => Location(p)).array;
+ 
+@@ -1223,7 +1232,9 @@
+ 
+ 		// check for dub.selections.json in root project dir first, then walk up its
+ 		// parent directories and look for inheritable dub.selections.json files
+-		const path = this.findSelections(absProjectPath);
++		import std.process : environment;
++		const externalSelections = environment.get("DUB_PURIFIER_SELECTIONS", "");
++		const path = externalSelections.length ? NativePath(externalSelections) : this.findSelections(absProjectPath);
+ 		if (path.empty) return N.init;
+ 		const content = this.fs.readText(path);
+ 		// TODO: Remove `StrictMode.Warn` after v1.40 release
+@@ -1235,7 +1246,7 @@
+ 		if (selections.isNull())
+ 			return N.init;
+ 		// Non-inheritable selections found
+-		if (!path.startsWith(absProjectPath) && !selections.get().inheritable)
++		if (!externalSelections.length && !path.startsWith(absProjectPath) && !selections.get().inheritable)
+ 			return N.init;
+ 		return N(SelectionsFileLookupResult(path, selections.get()));
+ 	}
+--- a/source/dub/packagesuppliers/registry.d
++++ b/source/dub/packagesuppliers/registry.d
+@@ -75,7 +75,22 @@
+ 		auto url = genPackageDownloadUrl(name, dep, pre_release);
+ 		if(url.isNull) return null;
+ 		try {
+-			return retryDownload(url.get);
++            import std.process : environment;
++            import std.file : mkdirRecurse, write;
++            import std.path : buildPath, baseName;
++            auto localBlobs = environment.get("DUB_PURIFIER_FETCH_BLOBS", "");
++            import std.file : read;
++            auto data = localBlobs.length
++                ? cast(ubyte[])read(buildPath(localBlobs, name.main.toString() ~ "-" ~ baseName(url.get.toString())))
++                : retryDownload(url.get);
++            auto capture = environment.get("DUB_PURIFIER_CAPTURE", "");
++            if (capture.length) {
++                mkdirRecurse(capture);
++                auto stem = name.main.toString() ~ "-" ~ baseName(url.get.toString());
++                write(buildPath(capture, stem), data);
++                write(buildPath(capture, stem ~ ".url"), url.get.toString());
++            }
++            return data;
+ 		}
+ 		catch(HTTPStatusException e) {
+ 			if (e.status == 404) throw e;
+@@ -95,7 +110,14 @@
+ 	}
+ 
+ 	private Json getMetadata(in PackageName name)
+-	{
++    {
++        import std.process : environment;
++        import std.file : readText;
++        auto localMetadata = environment.get("DUB_PURIFIER_FETCH_METADATA", "");
++        if (localMetadata.length) {
++            auto data = parseJsonString(readText(localMetadata), localMetadata);
++            return data[name.main.toString()];
++        }
+ 		auto now = Clock.currTime(UTC());
+ 		if (auto pentry = name.main in m_metadataCache) {
+ 			if (pentry.cacheTime + m_maxCacheTime > now)
+@@ -118,7 +140,15 @@
+ 		foreach (pkg, info; json.get!(Json[string]))
+ 		{
+ 			logDebug("adding %s to metadata cache", pkg);
+-			m_metadataCache[PackageName(pkg)] = CacheEntry(info, now);
++            import std.process : environment;
++            import std.file : mkdirRecurse, write;
++            import std.path : buildPath;
++            auto capture = environment.get("DUB_PURIFIER_CAPTURE", "");
++            if (capture.length) {
++                mkdirRecurse(capture);
++                write(buildPath(capture, "metadata-" ~ pkg ~ ".json"), info.toString());
++            }
++            m_metadataCache[PackageName(pkg)] = CacheEntry(info, now);
+ 		}
+ 		return json[name.main.toString()];
+ 	}

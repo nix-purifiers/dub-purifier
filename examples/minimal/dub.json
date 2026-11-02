@@ -1,0 +1,1 @@
+{"name": "purifier-example", "description": "Locked DUB example", "authors": ["the nix-purifier developers"], "license": "MIT", "dependencies": {"semver": "~>0.3.0"}}

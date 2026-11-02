@@ -1,0 +1,110 @@
+{
+  "manifests": {
+    "dub.json": {
+      "content": "{\"name\": \"purifier-example\", \"description\": \"Locked DUB example\", \"authors\": [\"the nix-purifier developers\"], \"license\": \"MIT\", \"dependencies\": {\"semver\": \"~>0.3.0\"}}",
+      "sha256": "dd0f5140d9499b509022d95c0dcae2e24f3f2662e9e29731ba12198c964ccf4e"
+    }
+  },
+  "nativeSelectionsHash": "b8575ebae1e8fcf40d0fdfca5d4ae94417f9cbf8d45e4580f1399ee94d8b7903",
+  "profiles": {
+    "x86_64-linux::debug": {
+      "buildType": "debug",
+      "configuration": "",
+      "entries": [
+        {
+          "hash": "sha256-NOkh7AgWAWt974bNoUR/7INNbtkF5VH1FEuEzos/lho=",
+          "mirrors": [],
+          "path": "semver-0.3.4.zip",
+          "url": "https://code.dlang.org/packages/semver/0.3.4.zip"
+        }
+      ],
+      "nativeSelections": {
+        "fileVersion": 1,
+        "versions": {
+          "semver": "0.3.4"
+        }
+      },
+      "registryMetadata": {
+        "semver": {
+          "versions": [
+            {
+              "name": "semver",
+              "version": "0.3.4"
+            }
+          ]
+        }
+      },
+      "rootName": "purifier-example",
+      "system": "x86_64-linux",
+      "targetFileName": "purifier-example"
+    },
+    "x86_64-linux::release": {
+      "buildType": "release",
+      "configuration": "",
+      "entries": [
+        {
+          "hash": "sha256-NOkh7AgWAWt974bNoUR/7INNbtkF5VH1FEuEzos/lho=",
+          "mirrors": [],
+          "path": "semver-0.3.4.zip",
+          "url": "https://code.dlang.org/packages/semver/0.3.4.zip"
+        }
+      ],
+      "nativeSelections": {
+        "fileVersion": 1,
+        "versions": {
+          "semver": "0.3.4"
+        }
+      },
+      "registryMetadata": {
+        "semver": {
+          "versions": [
+            {
+              "name": "semver",
+              "version": "0.3.4"
+            }
+          ]
+        }
+      },
+      "rootName": "purifier-example",
+      "system": "x86_64-linux",
+      "targetFileName": "purifier-example"
+    },
+    "x86_64-linux:unittest:unittest": {
+      "buildType": "unittest",
+      "configuration": "unittest",
+      "entries": [
+        {
+          "hash": "sha256-NOkh7AgWAWt974bNoUR/7INNbtkF5VH1FEuEzos/lho=",
+          "mirrors": [],
+          "path": "semver-0.3.4.zip",
+          "url": "https://code.dlang.org/packages/semver/0.3.4.zip"
+        }
+      ],
+      "nativeSelections": {
+        "fileVersion": 1,
+        "versions": {
+          "semver": "0.3.4"
+        }
+      },
+      "registryMetadata": {
+        "semver": {
+          "versions": [
+            {
+              "name": "semver",
+              "version": "0.3.4"
+            }
+          ]
+        }
+      },
+      "rootName": "purifier-example",
+      "system": "x86_64-linux",
+      "targetFileName": "purifier-example"
+    }
+  },
+  "toolVersions": {
+    "dub": "1.42.0",
+    "ldc": "1.42.0",
+    "sdk": "9e0aa0e37d6656ba3ed69c5a3fa6c64430b8a93eea7c73f7de5c55fcf986fd3d"
+  },
+  "version": 1
+}

@@ -1,0 +1,24 @@
+{
+  "dependencies": {
+    "dsymbol": {
+      "version": "0.11.3",
+      "sha256": "sha256-Z7tnbv+MiL1cXwo5fFlZcZMU2ASLRoMqhScxGBaCljo="
+    },
+    "emsi_containers": {
+      "version": "0.8.1",
+      "sha256": "sha256-DXWEmnIJy0tMGsRmgTpiCsC+BXbMaeCsGyUJihbGV1Y="
+    },
+    "libdparse": {
+      "version": "0.15.4",
+      "sha256": "sha256-pYzSlgD6S/2OVogWqV7YFWiJ+iIgMJ+O1ZoX2o0G+K8="
+    },
+    "msgpack-d": {
+      "version": "1.0.1",
+      "sha256": "sha256-rQA4p8UfvmCI60jdrsqGWgVvHWrrPK2BBUnb6o8x26w="
+    },
+    "stdx-allocator": {
+      "version": "2.77.5",
+      "sha256": "sha256-Us3TiLg/Wnj7m1fBdlAM8Lgo/JHIKwmy8lInkrlAA70="
+    }
+  }
+}

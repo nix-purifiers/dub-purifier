@@ -1,0 +1,47 @@
+--- a/source/served/extension.d
++++ b/source/served/extension.d
+@@ -651,6 +651,26 @@
+ 	}
+ 	trace("Initializing serve-d for " ~ workspaceUri);
+ 
++    // Ask the scoped native DUB for source paths. The bundled DUB predates
++    // the package cache format and must not resolve this workspace itself.
++    import std.process : environment, execute;
++    import std.path : isAbsolute;
++    if (environment.get("DUB_PURIFIER_PACKAGES", "").length) {
++        auto result = execute([environment.get("DUB_PURIFIER_NATIVE"),
++            "--root=" ~ workspaceUri.uriToFile, "describe", "--compiler=ldc2"]);
++        if (result.status != 0) throw new Exception("Locked DUB description failed: " ~ result.output);
++        auto description = parseJSON(result.output);
++        string[] paths;
++        foreach (pkg; description["packages"].array) {
++            foreach (entry; pkg["importPaths"].array) {
++                auto path = entry.str;
++                paths ~= path.isAbsolute ? path : buildNormalizedPath(pkg["path"].str, path);
++            }
++        }
++        proj.config.d.projectImportPaths = paths;
++        proj.config.d.stdlibPath = JSONValue(environment.get("DUB_PURIFIER_INCLUDE"));
++    }
++
+ 	struct Root
+ 	{
+ 		RootSuggestion root;
+@@ -761,7 +781,8 @@
+ 
+ 	emitExtensionEvent!onAddingProject(instance, workspaceRoot, workspaceUri);
+ 
+-	bool disableDub = proj.config.d.neverUseDub || !root.useDub;
++	import std.process : environment;
++	bool disableDub = environment.get("DUB_PURIFIER_PACKAGES", "").length != 0 || proj.config.d.neverUseDub || !root.useDub;
+ 	bool loadedDub;
+ 	Exception err;
+ 	if (!disableDub)
+@@ -961,6 +982,7 @@
+ @protocolMethod("shutdown")
+ JSONValue shutdown()
+ {
++	shutdownRequested = true;
+ 	if (!backend)
+ 		return JSONValue(null);
+ 	backend.shutdown();

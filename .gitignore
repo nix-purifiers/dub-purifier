@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+*.log
+result
+cli-native
+.dub/
+.dub-purifier/
+examples/minimal/purifier-example
+examples/minimal/purifier-example-test-*

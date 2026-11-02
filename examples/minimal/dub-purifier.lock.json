@@ -7,6 +7,99 @@
   },
   "nativeSelectionsHash": "b8575ebae1e8fcf40d0fdfca5d4ae94417f9cbf8d45e4580f1399ee94d8b7903",
   "profiles": {
+    "aarch64-linux::debug": {
+      "buildType": "debug",
+      "configuration": "",
+      "entries": [
+        {
+          "hash": "sha256-NOkh7AgWAWt974bNoUR/7INNbtkF5VH1FEuEzos/lho=",
+          "mirrors": [],
+          "path": "semver-0.3.4.zip",
+          "url": "https://code.dlang.org/packages/semver/0.3.4.zip"
+        }
+      ],
+      "nativeSelections": {
+        "fileVersion": 1,
+        "versions": {
+          "semver": "0.3.4"
+        }
+      },
+      "registryMetadata": {
+        "semver": {
+          "versions": [
+            {
+              "name": "semver",
+              "version": "0.3.4"
+            }
+          ]
+        }
+      },
+      "rootName": "purifier-example",
+      "system": "aarch64-linux",
+      "targetFileName": "purifier-example"
+    },
+    "aarch64-linux::release": {
+      "buildType": "release",
+      "configuration": "",
+      "entries": [
+        {
+          "hash": "sha256-NOkh7AgWAWt974bNoUR/7INNbtkF5VH1FEuEzos/lho=",
+          "mirrors": [],
+          "path": "semver-0.3.4.zip",
+          "url": "https://code.dlang.org/packages/semver/0.3.4.zip"
+        }
+      ],
+      "nativeSelections": {
+        "fileVersion": 1,
+        "versions": {
+          "semver": "0.3.4"
+        }
+      },
+      "registryMetadata": {
+        "semver": {
+          "versions": [
+            {
+              "name": "semver",
+              "version": "0.3.4"
+            }
+          ]
+        }
+      },
+      "rootName": "purifier-example",
+      "system": "aarch64-linux",
+      "targetFileName": "purifier-example"
+    },
+    "aarch64-linux:unittest:unittest": {
+      "buildType": "unittest",
+      "configuration": "unittest",
+      "entries": [
+        {
+          "hash": "sha256-NOkh7AgWAWt974bNoUR/7INNbtkF5VH1FEuEzos/lho=",
+          "mirrors": [],
+          "path": "semver-0.3.4.zip",
+          "url": "https://code.dlang.org/packages/semver/0.3.4.zip"
+        }
+      ],
+      "nativeSelections": {
+        "fileVersion": 1,
+        "versions": {
+          "semver": "0.3.4"
+        }
+      },
+      "registryMetadata": {
+        "semver": {
+          "versions": [
+            {
+              "name": "semver",
+              "version": "0.3.4"
+            }
+          ]
+        }
+      },
+      "rootName": "purifier-example",
+      "system": "aarch64-linux",
+      "targetFileName": "purifier-example"
+    },
     "x86_64-linux::debug": {
       "buildType": "debug",
       "configuration": "",

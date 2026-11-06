@@ -39,6 +39,14 @@ let
     && builtins.match "[A-Za-z0-9_-]*" p.configuration != null
     && builtins.isString (p.targetFileName or null)
     && baseNameOf p.targetFileName == p.targetFileName
+    && (
+      (!(p ? targetType) && !(p ? targetPath))
+      || (
+        builtins.isString (p.targetType or null)
+        && builtins.match "[A-Za-z][A-Za-z0-9]*" p.targetType != null
+        && builtins.isString (p.targetPath or null)
+      )
+    )
     && builtins.isList (p.entries or null)
     && builtins.all validEntry p.entries
     && builtins.isAttrs (p.registryMetadata or null)

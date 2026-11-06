@@ -84,8 +84,9 @@ It returns `packages.environment`, `packages.project`, `packages.default`,
 to a GitHub release.
 `configuration`, `buildType`, `fetchers`, `nativeBuildInputs`, `doCheck`,
 `buildCommand`, `installCommand` and `srcFilter` customize the build.
-The default installation expects an executable target; override `installCommand`
-for libraries or other layouts.
+The default installation expects an executable target. `nativeProducts` installs
+an explicitly selected dynamic C ABI target under `lib/`; `installCommand` can
+customize other layouts.
 
 ## Current scope
 
@@ -101,6 +102,60 @@ Registry packages remain immutable. Ordinary global and local package caches,
 local overrides, custom search paths and registry suppliers cannot replace the
 prepared dependency packages. The unwrapped SDK retains ordinary DUB behavior
 when its purifier environment is absent.
+
+## Native C ABI projections
+
+`buildDubProject` accepts an opt-in `nativeProducts` declaration for the root
+DUB `dynamicLibrary` target. Run `dub-purifier lock` again to capture its native
+target type and path before enabling it. Older locks and ordinary executable
+builds retain their existing behavior and expose empty projections.
+
+```nix
+pkgs.dub-purifier.buildDubProject {
+  src = ./.;
+  nativeProducts.my-library = {
+    abi = "c";
+    runtime = {
+      kind = "druntime";
+      lifecycle = "same-thread";
+      initializeSymbol = "my_library_init";
+      terminateSymbol = "my_library_term";
+      attachThreadSymbol = "my_library_thread_enter";
+      detachThreadSymbol = "my_library_thread_leave";
+    };
+  };
+}
+```
+
+The key must match the native root package name. The product supplies these
+four distinct C ABI functions; the purifier does not generate runtime wrappers
+or infer a C ABI from a filename. Initialization and termination return an `int`
+(success is 1); foreign-thread entry and exit return `void`. Call the declared
+initialization function before using D module state or the GC, attach foreign
+threads before D calls, detach them afterwards, and terminate on the initializing
+thread after all calls and attached threads finish. Consumers supply compatible
+signatures for the product's other exported functions.
+
+The selected native target is installed under `lib/`. Both the result and
+`packages.project` expose `projections.native`, `projections.python-ffi` and
+`projections.java-ffi`. Each view contains `catalog.json` with exact library paths,
+the compiler identity and the declared lifecycle, `purifier_native.py` for lazy
+ctypes loading, and `java.args` for the library search path. These views retain
+the installed producer and its linked runtime closure. Loading does not run the
+declared initialization function automatically.
+
+Only the captured dynamic root is selectable. Static libraries, executables,
+missing metadata or outputs, escaping paths, duplicate or malformed lifecycle
+symbols, and symbols not defined by the selected library are rejected. A custom
+`installCommand` must preserve the selected library's bytes inside the output.
+
+The native test captures profiles on its actual runner and exercises C,
+Python ctypes/CFFI, GC allocation, module initialization, TLS and an attached
+foreign thread. Java FFM uses same-thread confined lookup, initialization,
+calls, termination and close, then exits naturally. Global Java lookup produced
+D runtime warnings during shutdown in the native controls; this does not
+establish a general safe-unloading contract. ARM runtime support for these views
+requires the corresponding native CI run.
 
 ## Credits
 

@@ -1,0 +1,1 @@
+{"name": "purifier-native-proof", "targetType": "dynamicLibrary", "targetName": "purifier_native_proof", "targetPath": "lib", "sourcePaths": ["source"]}

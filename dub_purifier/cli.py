@@ -199,6 +199,8 @@ def lock_project(root, companion, selections, configurations, updates):
                 "buildType": build,
                 "rootName": desc["rootPackage"],
                 "targetFileName": root_pkg["targetFileName"],
+                "targetType": root_pkg["targetType"],
+                "targetPath": root_pkg["targetPath"],
                 "entries": entries,
                 "registryMetadata": metadata,
                 "nativeSelections": native_lock,

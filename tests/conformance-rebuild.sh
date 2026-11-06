@@ -2,3 +2,5 @@
 set -euo pipefail
 system=$(nix eval --impure --raw --expr builtins.currentSystem)
 nix build --no-link --rebuild ".#checks.$system.environment" ".#checks.$system.project" ".#checks.$system.release"
+
+python3 tests/native-projections.py

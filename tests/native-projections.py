@@ -247,6 +247,27 @@ in {result}
         assert bad.returncode and expected in bad.stderr, bad.stderr
         rejected += 1
 
+    extra = (
+        "installCommand = "
+        + json.dumps(
+            'mkdir -p replacement/lib; cp lib/libpurifier_native_proof.so replacement/lib/; ln -s "$PWD/replacement" "$out"'
+        )
+        + ";"
+    )
+    bad = run(
+        [
+            "nix",
+            "build",
+            "--impure",
+            "--no-link",
+            "--expr",
+            expression(extra=extra, result="built.packages.project"),
+        ],
+        success=False,
+    )
+    assert bad.returncode and "escapes producer" in bad.stderr, bad.stderr
+    rejected += 1
+
     # Native SDK describes these as static/executable even with library-like names.
     recipe_path = root / "dub.json"
     recipe = json.loads(recipe_path.read_text())

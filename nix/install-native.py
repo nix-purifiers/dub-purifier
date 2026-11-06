@@ -17,7 +17,7 @@ if relative.is_absolute() or ".." in relative.parts:
 source = (root / relative).resolve(strict=True)
 if not source.is_relative_to(root) or not source.is_file():
     raise ValueError("DUB native target must be a project-owned file")
-output = Path(output).resolve()
+output = Path(output).absolute()
 destination = output / "lib" / profile["targetFileName"]
 if mode == "install":
     shutil.copyfile(source, destination)

@@ -61,7 +61,7 @@ in
 assert lib.assertMsg (
   checked.data.toolVersions.dub == nativeDub.version
   && checked.data.toolVersions.ldc == ldc.version
-  && checked.data.toolVersions.sdk == builtins.hashFile "sha256" ./dub.patch
+  && checked.data.toolVersions.sdk == builtins.hashFile "sha256" ../native-dub/dub.patch
 ) "dub-purifier: SDK changed; run dub-purifier lock";
 runCommand "purified-dub-environment"
   {
@@ -77,7 +77,7 @@ runCommand "purified-dub-environment"
     export DUB_PURIFIER_ROOT_NAME=${lib.escapeShellArg profile.rootName}
     export DUB_PURIFIER_PACKAGES=${packages}/packages
     export DUB_PURIFIER_DEP_CACHE="$out/cache" DUB_PURIFIER_DEPS_ONLY=1
-    python3 ${../dub_purifier/build.py} ${metadata} "$PWD/work"
+    python3 ${../../dub_purifier/build.py} ${metadata} "$PWD/work"
     dub build --root="$PWD/work" --compiler=ldc2 --deep --build=${lib.escapeShellArg buildType} ${
       lib.optionalString (configuration != "") "--config=${lib.escapeShellArg configuration}"
     }

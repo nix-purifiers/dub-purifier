@@ -20,15 +20,15 @@
       forAll = nixpkgs.lib.genAttrs systems;
       overlay = final: prev: {
         dub-purifier = final.lib.makeScope final.newScope (scope: {
-          nativeDub = scope.callPackage ./nix/dub.nix { };
-          nativeServeD = scope.callPackage ./nix/serve-d.nix { };
-          nativeDcd = scope.callPackage ./nix/dcd.nix { };
-          toolchain = scope.callPackage ./nix/toolchain.nix { };
-          cli = scope.callPackage ./nix/cli.nix {
+          nativeDub = scope.callPackage ./pkgs/native-dub/default.nix { };
+          nativeServeD = scope.callPackage ./pkgs/native-serve-d/default.nix { };
+          nativeDcd = scope.callPackage ./pkgs/native-dcd/default.nix { };
+          toolchain = scope.callPackage ./pkgs/toolchain/default.nix { };
+          cli = scope.callPackage ./pkgs/cli/default.nix {
             nixpkgsSrc = nixpkgs;
             purifierSrc = purifier;
           };
-          buildDubProject = scope.callPackage ./nix/build-project.nix {
+          buildDubProject = scope.callPackage ./pkgs/build-dub-project/default.nix {
             purifier = import (purifier + "/nix/lib") { inherit (final) lib; };
           };
         });
@@ -47,7 +47,7 @@
         default = (pkgsFor system).dub-purifier.cli;
         cli = self.packages.${system}.default;
       });
-      lib.dub-purifier.readLock = import ./nix/read-lock.nix { lib = nixpkgs.lib; };
+      lib.dub-purifier = (nixpkgs.lib.extend (import ./lib-overlays/default { }).overlay).dub-purifier;
       apps = forAll (system: {
         default = {
           type = "app";

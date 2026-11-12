@@ -51,7 +51,7 @@
 }:
 let
   lock = purifier.checkLock (
-    import ./read-lock.nix { inherit lib; } { inherit src lockFile dubLock; }
+    import ../../lib-overlays/default/read-lock.nix { inherit lib; } { inherit src lockFile dubLock; }
   );
   profile =
     lock.data.profiles."${stdenv.hostPlatform.system}:${configuration}:${buildType}"

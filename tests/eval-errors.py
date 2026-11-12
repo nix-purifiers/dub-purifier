@@ -22,9 +22,9 @@ with tempfile.TemporaryDirectory(prefix="dub-eval-") as directory:
     profile = next(iter(original["profiles"]))
 
     def evaluate():
-        expression = f"let lib = (import /nix/store/cm5m4hjjh37s6z82rwa0vhkbcga3m8bq-source {{}}).lib; in (import {REPO}/nix/read-lock.nix {{ inherit lib; }} {{ src = {root}; }}).problems"
+        expression = f"let lib = (import /nix/store/cm5m4hjjh37s6z82rwa0vhkbcga3m8bq-source {{}}).lib; in (import {REPO}/lib-overlays/default/read-lock.nix {{ inherit lib; }} {{ src = {root}; }}).problems"
         # Use the flake pin on runners, where the local development store path is absent.
-        expression = f"let f = builtins.getFlake {json.dumps(str(REPO))}; lib = f.inputs.nixpkgs.lib; in (import {REPO}/nix/read-lock.nix {{ inherit lib; }} {{ src = {root}; }}).problems"
+        expression = f"let f = builtins.getFlake {json.dumps(str(REPO))}; lib = f.inputs.nixpkgs.lib; in (import {REPO}/lib-overlays/default/read-lock.nix {{ inherit lib; }} {{ src = {root}; }}).problems"
         return json.loads(
             subprocess.check_output(
                 ["nix", "eval", "--impure", "--json", "--expr", expression], text=True

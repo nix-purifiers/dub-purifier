@@ -232,7 +232,7 @@ def validate(root, companion, selections):
 
 def realize(root, companion, selections, config, build, target="environment"):
     validate(root, companion, selections)
-    expression = Path(__file__).resolve().parent.parent / "nix" / "realize.nix"
+    expression = Path(__file__).resolve().parent.parent / "pkgs" / "cli" / "realize.nix"
     args = [
         "nix",
         "build",

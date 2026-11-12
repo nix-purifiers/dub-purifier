@@ -21,14 +21,14 @@ in
 stdenvNoCC.mkDerivation {
   pname = "dub-purifier";
   version = "0.1.0";
-  src = ../.;
+  src = ../..;
   nativeBuildInputs = [ makeWrapper ];
   dontBuild = true;
   installPhase = ''
     mkdir -p "$out/bin" "$out/lib/dub-purifier"
-    cp -r dub_purifier nix "$out/lib/dub-purifier/"
+    cp -r dub_purifier lib-overlays pkgs "$out/lib/dub-purifier/"
     install -m755 bin/dub-purifier "$out/bin/dub-purifier"
-    substituteInPlace "$out/lib/dub-purifier/nix/realize.nix" \
+    substituteInPlace "$out/lib/dub-purifier/pkgs/cli/realize.nix" \
       --replace-fail '@nixpkgs@' '${nixpkgsSrc}' \
       --replace-fail '@purifier@' '${purifierSrc}'
     wrapProgram "$out/bin/dub-purifier" \
@@ -47,7 +47,7 @@ stdenvNoCC.mkDerivation {
       --set DUB_PURIFIER_SYSTEM ${stdenv.hostPlatform.system} \
       --set DUB_PURIFIER_LDC_VERSION ${ldc.version} \
       --set DUB_PURIFIER_DUB_VERSION ${nativeDub.version} \
-      --set DUB_PURIFIER_SDK_VERSION ${builtins.hashFile "sha256" ./dub.patch} \
+      --set DUB_PURIFIER_SDK_VERSION ${builtins.hashFile "sha256" ../native-dub/dub.patch} \
       --set DUB_PURIFIER_WRAPPER_BIN "$out/bin"
     makeWrapper "$out/bin/dub-purifier" "$out/bin/dub" --add-flags '--native --'
     makeWrapper "$out/bin/dub-purifier" "$out/bin/serve-d" --add-flags '--editor --'
